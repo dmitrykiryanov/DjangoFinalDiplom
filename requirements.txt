@@ -1,0 +1,11 @@
+Django
+djangorestframework
+psycopg2-binary
+django-filter
+django-rest-passwordreset
+drf-spectacular
+pyyaml
+ujson
+requests
+python-dotenv
+send-email
