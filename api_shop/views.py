@@ -1,6 +1,5 @@
 from distutils.util import strtobool
 
-# import send_email as send_email
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.conf import settings
@@ -8,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import URLValidator
 from django.db import IntegrityError
 from django.db.models import Q, Sum, Prefetch
-from django.http import JsonResponse
+
 from requests import get
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -23,6 +22,7 @@ from .serializers import UserSerializer, ContactSerializer, ShopSerializer, Cate
     ProductSerializer, OrderItemSerializer, OrderSerializer, OrderModifySerializer, OrderItemAddSerializer
 from .models import ConfirmEmailToken, Contact, Shop, Category, Product, Parameter, ProductParameter, \
     Order, OrderItem
+from .tasks import new_user_registered_task, new_order_task
 
 class RegisterAccount(APIView):
     """
@@ -46,11 +46,7 @@ class RegisterAccount(APIView):
                     user = user_serializer.save()
                     user.set_password(request.data['password'])
                     user.save()
-                    token, _ = ConfirmEmailToken.objects.get_or_create(user_id=user.id)
-                    user.email_user(f'Token для подтверждения регистрации пользователя {token.user.email}',
-                                    token.key,
-                                    from_email=settings.EMAIL_HOST_USER)
-                    # new_user_registered.send(sender=self.__class__, user_id=user.id)
+                    new_user_registered_task.delay(user_id=user.id)
                     return Response({'status': True})
                 else:
                     return Response({'status': False, 'error': user_serializer.errors},
@@ -522,9 +518,7 @@ class OrderView(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
             else:
                 if is_updated:
-                    request.user.email_user(f'Обновление статуса заказа',
-                                            f'Заказ номер {request.data["id"]} сформирован',
-                                            from_email=settings.EMAIL_HOST_USER)
+                    new_order_task.delay(user_id=request.user.id)
                     return Response({'status': True})
 
         return Response({'status': False, 'error': 'Не указаны все необходимые аргументы'},

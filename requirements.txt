@@ -9,3 +9,5 @@ ujson
 requests
 python-dotenv
 send-email
+redis
+celery
