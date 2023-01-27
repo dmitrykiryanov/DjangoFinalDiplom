@@ -26,12 +26,13 @@
 pip install -r requirements.txt
 ```
 
-Вам необходимо будет создать базу и прогнать миграции:
+Вам необходимо будет создать базу, прогнать миграции и заполнить файл .env(пример в env.example):
 
 ```bash
 manage.py makemigrations
 manage.py migrate
 manage.py createsuperuser
+env.example
 ```
 
 Выполнить команду:
